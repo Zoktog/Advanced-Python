@@ -16,7 +16,7 @@ def get_config(path):
         "REPORT_DIR": "./reports",
         "REPORT_NAME": "report-{}.html",
         "REPORT_TEMPLATE": "report.html",
-        "MAX_PERCENT_ERRORS": 30,
+        "MAX_ERRORS": 30,
         "LOG_DIR": "./logs",
         "ROUND_NUMBER": 3,
         "LOGGING_FORMAT": "[%(asctime)s] %(levelname).1s %(message)s",
