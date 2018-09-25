@@ -7,6 +7,7 @@ import gzip
 import logging
 import argparse
 
+from pathlib import Path
 from statistics import median
 
 
@@ -22,16 +23,17 @@ def get_config(path):
         "LOGGING_FORMAT": "[%(asctime)s] %(levelname).1s %(message)s",
         "LOGGING_LEVEL": "INFO",
         "LOG_FILE": None,
-        "LOGGING_DATA_FORMAT": "%Y.%m.%d %H:%M:%S"
+        "LOGGING_DATA_FORMAT": "%Y.%m.%d %H:%M:%S",
+        "DEFAULT_CFG_FILENAME": "default.py"
     }
     if path:
-        custom_config = import_config_file(path)
+        custom_config = import_config_file(path, config)
         config.update(custom_config)
     return config
 
 
-def import_config_file(config_path):  # /path/to/file
-    default_cfg_filename = 'default.py'
+def import_config_file(config_path, config):  # /path/to/file
+    default_cfg_filename = config['DEFAULT_CFG_FILENAME']
     config_path = config_path.config
     if config_path:
         if os.path.isfile(config_path):
@@ -49,7 +51,7 @@ def import_config_file(config_path):  # /path/to/file
                 return cfg
             except:
                 logging.error(f"Can't use config file: {paht}")
-                sys.exit(0)
+                exec()
     else:
         return {}
 
@@ -66,14 +68,14 @@ def find_log_in_dir(cfg):
     try:
         files = [f for f in os.listdir(cfg['LOG_DIR']) if re.match(r'nginx-access-ui.log-\d{8}.(gz|log)', f)]
 
-        v = sorted(files, key=lambda x: re.findall('\d{8}', x), reverse=True)
-        if len(v) is not len(set(v)):
+        sorted_files = sorted(files, key=lambda x: re.findall('\d{8}', x), reverse=True)
+        if len(sorted_files) is not len(set(sorted_files)):
             logging.warning('ERORR: several files names of the same')
-        abs_file_path = os.path.join(cfg['LOG_DIR'], v[0])
+        abs_file_path = os.path.join(cfg['LOG_DIR'], sorted_files[0])
         return abs_file_path
     except:
         logging.exception("Can't find the last log file in the dir")
-        sys.exit(0)
+        raise Exception('File not Found')
 
 
 def parse_line(line):
@@ -177,9 +179,15 @@ def export_report_to_html(report, cfg, date_report):
                 report_html.write(line.replace('$table_json', json.dumps(report)))
 
 
+def is_report_exist(date_report, config):
+    report_file = Path(os.path.join(config['REPORT_DIR'], config['REPORT_NAME'].replace('{}', date_report)))
+    if report_file.is_file():
+        return True
+
+
 def main():
-    path_config = parse_arg()
-    config = get_config(path_config)
+    args = parse_arg()
+    config = get_config(args.config)
     try:
         logging.basicConfig(filename=config["LOG_FILE"],
                             format=config["LOGGING_FORMAT"],
@@ -188,11 +196,13 @@ def main():
 
         log_path = find_log_in_dir(config)
         date_report = re.search('\d{8}', log_path).group(0)
-        logging.info(f'Start analysis log {log_path}')
-        json_report = read_line(log_path, config)
-        logging.info('End analysis and export report')
-        export_report_to_html(json_report, config, date_report)
-
+        if is_report_exist(date_report, config):
+            logging.info("The report was already formed earlier")
+        else:
+            logging.info(f'Start analysis log {log_path}')
+            json_report = read_line(log_path, config)
+            logging.info('End analysis and export report')
+            export_report_to_html(json_report, config, date_report)
     except:
         logging.exception("We have a problem")
         sys.exit(0)
