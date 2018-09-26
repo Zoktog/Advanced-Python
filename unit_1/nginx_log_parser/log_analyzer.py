@@ -98,6 +98,14 @@ def parse_line(line):
     return re_obj.match(line)
 
 
+def check_errors(errors_line, num_lines, cfg):
+    current_percent_errors = errors_line * 100 / num_lines
+
+    if current_percent_errors > cfg['MAX_ERRORS']:
+        logging.error('The Errors > MAX_ERRORS')
+        sys.exit(0)
+
+
 def read_line(log_path, cfg):
     report = {
         'count_all': 0,
@@ -106,6 +114,7 @@ def read_line(log_path, cfg):
     with gzip.open(log_path, 'r') if log_path.endswith(".gz") else open(log_path) as file:
         line_number = 0
         errors_line = 0
+        num_lines = sum(1 for _ in file)
         for line in file:
             line_object = parse_line(line)
             if line_object:
@@ -131,9 +140,8 @@ def read_line(log_path, cfg):
             else:
                 errors_line += 1
                 logging.warning(f'ERORR: {errors_line}\t LINE: {line}')
-                if errors_line > cfg['MAX_ERRORS']:
-                    logging.error('The Errors > MAX_ERRORS')
-                    sys.exit(0)
+                check_errors(errors_line, num_lines, cfg)
+
         del report['count_all']
         del report['time_sum_all']
 
