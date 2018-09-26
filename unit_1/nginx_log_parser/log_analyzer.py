@@ -100,7 +100,6 @@ def parse_line(line):
 
 def check_errors(errors_line, num_lines, cfg):
     current_percent_errors = errors_line * 100 / num_lines
-
     if current_percent_errors > cfg['MAX_ERRORS']:
         logging.error('The Errors > MAX_ERRORS')
         sys.exit(0)
