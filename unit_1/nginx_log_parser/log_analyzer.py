@@ -106,9 +106,7 @@ def check_errors(errors_line, num_lines, cfg):
 
 
 def read_line(log_path, cfg):
-    report = {
-        'count_all': 0,
-        'time_sum_all': 0}
+    report = {'count_all': 0, 'time_sum_all': 0}
 
     with gzip.open(log_path, 'r') if log_path.endswith(".gz") else open(log_path) as file:
         line_number = 0
